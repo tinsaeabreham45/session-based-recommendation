@@ -1,0 +1,19 @@
+# Data Handling and Preprocessing
+pandas
+
+# Graph Database Connection (Official Neo4j Driver)
+neo4j
+
+# Web Framework
+flask
+
+# General Utilities and Notebook Environment
+jupyter
+tqdm # Recommended for progress bars during long data loads
+
+# LLM Integration
+google-generativeai
+python-dotenv
+
+# Real-time Graph Visualization
+flask-socketio
