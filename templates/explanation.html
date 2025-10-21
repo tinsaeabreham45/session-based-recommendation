@@ -1,11 +1,12 @@
-{% extends "base.html" %} {% block title %}Explanation: Why recommend {{
-recommended_pid }} for {{ viewed_pid }}?{% endblock %} {% block content %}
+{% extends "base.html" %} 
+{% block title %}Explanation: Why recommend {{ recommended_pid }} for {{ viewed_pid }}?{% endblock %} 
+
+{% block content %}
 <div class="card shadow-sm fade-in">
   <div class="card-body p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h1 class="h4 mb-0">
-        Why recommend Product {{ recommended_pid }} for Product {{ viewed_pid
-        }}?
+        Why recommend Product {{ recommended_pid }} for Product {{ viewed_pid }}?
       </h1>
       <a
         class="btn btn-outline-secondary"
@@ -20,17 +21,14 @@ recommended_pid }} for {{ viewed_pid }}?{% endblock %} {% block content %}
         <div class="card bg-light">
           <div class="card-body">
             <h5 class="card-title">LLM Explanation</h5>
-            <div class="explanation-content">
-              <pre
-                class="p-3 bg-white border rounded"
-                style="
-                  white-space: pre-wrap;
-                  max-height: 400px;
-                  overflow-y: auto;
-                "
-              >
-{{ prompt_string }}</pre
-              >
+            <div class="explanation-content p-3 bg-white border rounded">
+              <!-- THIS IS THE NEW TARGET ELEMENT -->
+              <div id="markdown-output">
+                <!-- Raw string is placed here initially -->
+                <script type="text/template" id="raw-markdown-content">
+                  {{ prompt_string }}
+                </script>
+              </div>
             </div>
           </div>
         </div>
@@ -90,11 +88,39 @@ recommended_pid }} for {{ viewed_pid }}?{% endblock %} {% block content %}
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+{% endblock %} 
+
+{% block extra_js %}
+<!-- 1. Include the marked.js library from a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 2. Get the raw Markdown text
+    const rawMarkdownElement = document.getElementById('raw-markdown-content');
+    const markdownText = rawMarkdownElement.textContent.trim();
+
+    // 3. Convert the Markdown to HTML
+    // Marked.js automatically converts the **text** and *lists* into proper HTML
+    // We use marked.parse() for the conversion
+    const htmlOutput = marked.parse(markdownText); 
+
+    // 4. Update the content of the target div
+    const outputDiv = document.getElementById('markdown-output');
+    outputDiv.innerHTML = htmlOutput;
+  });
+
   function copyExplanation() {
-    const explanation = `{{ prompt_string | replace('\n', '\\n') | replace('"', '\\"') }}`;
-    RecommendationApp.copyToClipboard(explanation);
+    // ... (Your existing copy function, which is fine) ...
+    const explanation = document.getElementById('raw-markdown-content').textContent.trim();
+    // This assumes you have a global RecommendationApp.copyToClipboard utility
+    if (window.RecommendationApp && window.RecommendationApp.copyToClipboard) {
+      window.RecommendationApp.copyToClipboard(explanation);
+    } else {
+      navigator.clipboard.writeText(explanation).then(() => {
+        alert('Explanation copied to clipboard!');
+      });
+    }
   }
 </script>
 {% endblock %}
