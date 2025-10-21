@@ -1,0 +1,282 @@
+{% extends "base.html" %} {% block title %}Real-time Graph Visualization -
+Session-Based Recommendation System{% endblock %} {% block extra_css %}
+<script
+  type="text/javascript"
+  src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+></script>
+{% endblock %} {% block content %}
+<div class="card shadow-sm fade-in">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Real-time Graph Visualization</h1>
+      <div class="controls">
+        <button
+          class="btn btn-primary btn-sm"
+          onclick="loadGraph()"
+          id="refreshBtn"
+        >
+          <span class="spinner d-none"></span>
+          Refresh Graph
+        </button>
+        <button
+          class="btn btn-success btn-sm"
+          onclick="startLiveUpdates()"
+          id="startBtn"
+        >
+          Start Live Updates
+        </button>
+        <button
+          class="btn btn-warning btn-sm"
+          onclick="stopLiveUpdates()"
+          id="stopBtn"
+          disabled
+        >
+          Stop Updates
+        </button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div id="graphContainer"></div>
+        <div class="status mt-2">
+          <small class="text-muted">
+            Status: <span id="status">Ready</span> | Connection:
+            <span class="connection-status text-muted">Checking...</span>
+          </small>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Graph Statistics</h5>
+            <div id="graphInfo">
+              <p><strong>Nodes:</strong> <span id="nodeCount">-</span></p>
+              <p><strong>Edges:</strong> <span id="edgeCount">-</span></p>
+              <p>
+                <strong>Last Update:</strong> <span id="lastUpdate">-</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <h5 class="card-title">Live Recommendations</h5>
+            <div id="liveRecommendations">
+              <p class="text-muted">
+                Click on a product node to see recommendations
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <h5 class="card-title">Graph Controls</h5>
+            <div class="form-group mb-2">
+              <label class="form-label small">Physics</label>
+              <select
+                class="form-select form-select-sm"
+                id="physicsSelect"
+                onchange="updatePhysics()"
+              >
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </div>
+            <div class="form-group mb-2">
+              <label class="form-label small">Layout</label>
+              <select
+                class="form-select form-select-sm"
+                id="layoutSelect"
+                onchange="updateLayout()"
+              >
+                <option value="barnesHut">Barnes-Hut</option>
+                <option value="forceAtlas2Based">Force Atlas 2</option>
+                <option value="hierarchical">Hierarchical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  let network = null;
+  let nodes = null;
+  let edges = null;
+  let liveUpdateInterval = null;
+
+  // Initialize the graph
+  function initGraph() {
+    const container = document.getElementById("graphContainer");
+    const data = { nodes: nodes, edges: edges };
+    const options = RecommendationApp.createGraphOptions();
+
+    network = new vis.Network(container, data, options);
+
+    // Add click event for recommendations
+    network.on("click", function (params) {
+      if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        const node = nodes.get(nodeId);
+        if (node && node.group === "product") {
+          showRecommendations(nodeId);
+        }
+      }
+    });
+
+    // Add hover events
+    network.on("hoverNode", function (params) {
+      document.body.style.cursor = "pointer";
+    });
+
+    network.on("blurNode", function (params) {
+      document.body.style.cursor = "default";
+    });
+  }
+
+  // Load graph data from API
+  function loadGraph() {
+    const refreshBtn = document.getElementById("refreshBtn");
+    RecommendationApp.setLoading(refreshBtn, true);
+    document.getElementById("status").textContent = "Loading...";
+
+    RecommendationApp.apiRequest("/api/graph-data")
+      .then((data) => {
+        nodes = new vis.DataSet(data.nodes);
+        edges = new vis.DataSet(data.edges);
+        initGraph();
+        updateGraphInfo();
+        document.getElementById("status").textContent = "Loaded";
+        RecommendationApp.showNotification(
+          "Graph loaded successfully",
+          "success"
+        );
+      })
+      .catch((error) => {
+        console.error("Error loading graph:", error);
+        document.getElementById("status").textContent = "Error loading graph";
+        RecommendationApp.showNotification("Failed to load graph", "error");
+      })
+      .finally(() => {
+        RecommendationApp.setLoading(refreshBtn, false);
+      });
+  }
+
+  // Update graph information
+  function updateGraphInfo() {
+    document.getElementById("nodeCount").textContent =
+      RecommendationApp.formatNumber(nodes.length);
+    document.getElementById("edgeCount").textContent =
+      RecommendationApp.formatNumber(edges.length);
+    document.getElementById("lastUpdate").textContent =
+      new Date().toLocaleTimeString();
+  }
+
+  // Show recommendations for a product
+  function showRecommendations(productId) {
+    RecommendationApp.apiRequest(`/api/recommendations/${productId}`)
+      .then((data) => {
+        const recDiv = document.getElementById("liveRecommendations");
+        if (data.recommendations && data.recommendations.length > 0) {
+          let html = `<h6>Recommendations for Product ${productId}:</h6><ul class="list-unstyled">`;
+          data.recommendations.slice(0, 5).forEach((rec) => {
+            html += `<li class="mb-1">
+                        <span class="badge bg-primary me-1">${rec[0]}</span>
+                        <small class="text-muted">(Score: ${rec[1]})</small>
+                    </li>`;
+          });
+          html += "</ul>";
+          recDiv.innerHTML = html;
+        } else {
+          recDiv.innerHTML =
+            '<p class="text-muted">No recommendations found</p>';
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading recommendations:", error);
+      });
+  }
+
+  // Start live updates
+  function startLiveUpdates() {
+    if (liveUpdateInterval) return;
+
+    const socket = RecommendationApp.socket();
+    if (!socket || !RecommendationApp.isConnected()) {
+      RecommendationApp.showNotification("WebSocket not connected", "error");
+      return;
+    }
+
+    liveUpdateInterval = setInterval(() => {
+      socket.emit("request_update");
+    }, 5000); // Update every 5 seconds
+
+    document.getElementById("status").textContent = "Live updates active";
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").disabled = false;
+
+    RecommendationApp.showNotification("Live updates started", "success");
+  }
+
+  // Stop live updates
+  function stopLiveUpdates() {
+    if (liveUpdateInterval) {
+      clearInterval(liveUpdateInterval);
+      liveUpdateInterval = null;
+    }
+    document.getElementById("status").textContent = "Live updates stopped";
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("stopBtn").disabled = true;
+
+    RecommendationApp.showNotification("Live updates stopped", "info");
+  }
+
+  // Update physics settings
+  function updatePhysics() {
+    if (!network) return;
+
+    const physicsEnabled =
+      document.getElementById("physicsSelect").value === "true";
+    network.setOptions({
+      physics: {
+        enabled: physicsEnabled,
+      },
+    });
+  }
+
+  // Update layout
+  function updateLayout() {
+    if (!network) return;
+
+    const layout = document.getElementById("layoutSelect").value;
+    network.setOptions({
+      physics: {
+        solver: layout,
+      },
+    });
+  }
+
+  // Socket event handlers
+  document.addEventListener("DOMContentLoaded", function () {
+    const socket = RecommendationApp.socket();
+    if (socket) {
+      socket.on("graph_update", function (data) {
+        if (nodes && edges) {
+          nodes.update(data.nodes);
+          edges.update(data.edges);
+          updateGraphInfo();
+        }
+      });
+    }
+
+    // Load initial graph
+    loadGraph();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %} {% block title %}Recommendations for Product {{
+current_pid }} - Session-Based Recommendation System{% endblock %} {% block
+content %}
+<div class="card shadow-sm fade-in">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Recommendations for Product {{ current_pid }}</h1>
+      <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+
+    {% if recommendations %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Recommended PID</th>
+            <th>Co-occurrence Score</th>
+            <th>Avg Time Diff</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in recommendations %}
+          <tr>
+            <td class="text-secondary">{{ loop.index }}</td>
+            <td>
+              <span class="badge bg-primary">{{ rec[0] }}</span>
+            </td>
+            <td>
+              <span class="text-success fw-bold">{{ rec[1] }}</span>
+            </td>
+            <td>{{ "%.2f"|format(rec[2]/1000) }} seconds</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a
+                  class="btn btn-outline-info"
+                  href="{{ url_for('explain', viewed_pid=current_pid, recommended_pid=rec[0]) }}"
+                  data-bs-toggle="tooltip"
+                  title="Get LLM explanation"
+                >
+                  Why?
+                </a>
+                <a
+                  class="btn btn-outline-primary"
+                  href="{{ url_for('predict', pid=rec[0]) }}"
+                  data-bs-toggle="tooltip"
+                  title="Get recommendations for this product"
+                >
+                  Predict
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4">
+      <h5>Quick Actions</h5>
+      <div class="btn-group" role="group">
+        <a
+          class="btn btn-outline-primary"
+          href="{{ url_for('graph_visualization') }}"
+        >
+          View in Graph
+        </a>
+        <button
+          class="btn btn-outline-secondary"
+          onclick="copyRecommendations()"
+        >
+          Copy Results
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+      <h4 class="alert-heading">No Recommendations Found</h4>
+      <p>
+        No co-occurrence recommendations were found for Product {{ current_pid
+        }}. This could mean:
+      </p>
+      <ul class="mb-0">
+        <li>The product has no co-occurrence relationships</li>
+        <li>The product ID doesn't exist in the database</li>
+        <li>There's insufficient data for this product</li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function copyRecommendations() {
+      const recommendations = {{ recommendations | tojson }};
+      if (!recommendations || recommendations.length === 0) {
+          RecommendationApp.showNotification('No recommendations to copy', 'warning');
+          return;
+      }
+
+      let text = `Recommendations for Product {{ current_pid }}:\n\n`;
+      recommendations.forEach((rec, index) => {
+          text += `${index + 1}. Product ${rec[0]} (Score: ${rec[1]}, Avg Time: ${(rec[2]/1000).toFixed(2)}s)\n`;
+      });
+
+      RecommendationApp.copyToClipboard(text);
+  }
+</script>
+{% endblock %}

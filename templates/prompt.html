@@ -1,0 +1,166 @@
+{% extends "base.html" %} {% block title %}LLM Prompt - Session-Based
+Recommendation System{% endblock %} {% block content %}
+<div class="card shadow-sm fade-in">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">LLM Prompt Interface</h1>
+      <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <p class="text-muted mb-4">
+      Enter a prompt to get AI-generated explanations and insights about the
+      recommendation system.
+    </p>
+
+    <form method="post" class="needs-validation" novalidate>
+      <div class="mb-3">
+        <label for="prompt" class="form-label"
+          >Enter your prompt for Gemini</label
+        >
+        <textarea
+          id="prompt"
+          name="prompt"
+          class="form-control"
+          rows="8"
+          placeholder="Type your prompt here..."
+          required
+        >
+{{ default_prompt }}</textarea
+        >
+        <div class="invalid-feedback">Please enter a prompt.</div>
+        <div class="form-text">
+          You can ask questions about the recommendation system, request
+          explanations, or explore the data.
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit" id="submitBtn">
+          <span class="spinner d-none"></span>
+          Submit to Gemini
+        </button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('index') }}"
+          >Cancel</a
+        >
+        <button
+          class="btn btn-outline-info"
+          type="button"
+          onclick="loadSamplePrompts()"
+        >
+          Load Sample Prompts
+        </button>
+      </div>
+    </form>
+
+    {% if output %}
+    <div class="mt-4">
+      <div class="card bg-light">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">LLM Response</h5>
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              onclick="copyOutput()"
+            >
+              Copy Response
+            </button>
+          </div>
+          <div class="llm-output">
+            <pre
+              class="p-3 bg-white border rounded"
+              style="white-space: pre-wrap; max-height: 500px; overflow-y: auto"
+            >
+{{ output }}</pre
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Sample Prompts</h6>
+              <ul class="list-unstyled">
+                <li class="mb-2">
+                  <button
+                    class="btn btn-link btn-sm p-0 text-start"
+                    onclick="setPrompt('Explain how our co-occurrence graph generates next-item recommendations.')"
+                  >
+                    How does the recommendation system work?
+                  </button>
+                </li>
+                <li class="mb-2">
+                  <button
+                    class="btn btn-link btn-sm p-0 text-start"
+                    onclick="setPrompt('What are the key advantages of using graph-based recommendations over traditional collaborative filtering?')"
+                  >
+                    Graph vs traditional methods
+                  </button>
+                </li>
+                <li class="mb-2">
+                  <button
+                    class="btn btn-link btn-sm p-0 text-start"
+                    onclick="setPrompt('Analyze the scalability challenges of this session-based recommendation approach.')"
+                  >
+                    Scalability analysis
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">About This Feature</h6>
+              <p class="small text-muted mb-0">
+                This interface connects to Google's Gemini AI to provide
+                intelligent explanations and insights about the recommendation
+                system. The AI can analyze the system architecture, explain
+                recommendations, and provide expert commentary on the approach.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function setPrompt(text) {
+    document.getElementById("prompt").value = text;
+  }
+
+  function loadSamplePrompts() {
+    const samplePrompts = [
+      "Explain how our co-occurrence graph generates next-item recommendations.",
+      "What are the key advantages of using graph-based recommendations over traditional collaborative filtering?",
+      "Analyze the scalability challenges of this session-based recommendation approach.",
+      "How does the MRR score of 0.2503 compare to other recommendation systems?",
+      "What insights can you provide about the user behavior patterns in this dataset?",
+    ];
+
+    const randomPrompt =
+      samplePrompts[Math.floor(Math.random() * samplePrompts.length)];
+    setPrompt(randomPrompt);
+  }
+
+  function copyOutput() {
+    const output = `{{ output | replace('\n', '\\n') | replace('"', '\\"') }}`;
+    RecommendationApp.copyToClipboard(output);
+  }
+
+  // Form submission with loading state
+  document.querySelector("form").addEventListener("submit", function (e) {
+    const submitBtn = document.getElementById("submitBtn");
+    RecommendationApp.setLoading(submitBtn, true);
+  });
+</script>
+{% endblock %}

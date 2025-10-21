@@ -1,0 +1,128 @@
+{% extends "base.html" %} {% block title %}Dashboard - Session-Based
+Recommendation System{% endblock %} {% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm fade-in">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-3">Session-Based Recommendation System</h1>
+        <p class="muted mb-4">
+          A co-occurrence graph approach inspired by "A Graph-based Method for
+          Session-based Recommendations". All product and property values are
+          numeric (hashed).
+        </p>
+
+        <form
+          class="row gy-2 gx-3 align-items-center needs-validation"
+          onsubmit="handlePredictionForm(event)"
+          novalidate
+        >
+          <div class="col-auto">
+            <label class="form-label" for="pidInput">Product ID</label>
+            <input
+              id="pidInput"
+              type="number"
+              class="form-control form-control-lg"
+              placeholder="e.g. 119736"
+              required
+            />
+            <div class="invalid-feedback">Please enter a valid Product ID.</div>
+          </div>
+          <div class="col-auto pt-4">
+            <button class="btn btn-primary btn-lg" type="submit">
+              <span class="spinner d-none"></span>
+              Get Recommendations
+            </button>
+          </div>
+        </form>
+
+        <hr class="my-4" />
+        <div class="row text-center">
+          <div class="col-12 col-md-4">
+            <div class="p-3">
+              <div class="text-gradient h2 mb-0">{{ mrr_score }}</div>
+              <div class="muted">MRR Score</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-3">
+              <div class="h2 mb-0">Co-occurrence</div>
+              <div class="muted">Real-time Top-K</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-3">
+              <div class="h2 mb-0">Patterns</div>
+              <div class="muted">Sequential (3-step)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card shadow-sm mb-3 fade-in">
+      <div class="card-body">
+        <h2 class="h5">Quick Links</h2>
+        <div class="d-grid gap-2">
+          <a
+            class="btn btn-outline-primary"
+            href="{{ url_for('predict', pid=119736) }}"
+            >Predict for 119736</a
+          >
+          <a
+            class="btn btn-outline-primary"
+            href="{{ url_for('predict', pid=186702) }}"
+            >Predict for 186702</a
+          >
+          <a
+            class="btn btn-outline-primary"
+            href="{{ url_for('predict', pid=40870) }}"
+            >Predict for 40870</a
+          >
+          <a
+            class="btn btn-outline-success"
+            href="{{ url_for('start_session') }}"
+            >Interactive Session</a
+          >
+          <a class="btn btn-outline-info" href="{{ url_for('patterns') }}"
+            >Top Patterns</a
+          >
+          <a
+            class="btn btn-outline-warning"
+            href="{{ url_for('graph_visualization') }}"
+            >Real-time Graph</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="card shadow-sm fade-in">
+      <div class="card-body">
+        <h2 class="h5">About</h2>
+        <p class="muted mb-0">
+          MRR is computed using a 10% session split with the co-occurrence
+          model. The graph includes Visitor, Session, Product, Category,
+          PropertyType, and PropertyValue nodes.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function handlePredictionForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const pidInput = document.getElementById("pidInput");
+    const pid = pidInput.value.trim();
+
+    if (!pid) {
+      form.classList.add("was-validated");
+      return;
+    }
+
+    // Redirect to prediction page
+    window.location.href = `/predict/${encodeURIComponent(pid)}`;
+  }
+</script>
+{% endblock %}

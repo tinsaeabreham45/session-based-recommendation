@@ -1,0 +1,154 @@
+{% extends "base.html" %} {% block title %}Interactive Session Demo -
+Session-Based Recommendation System{% endblock %} {% block content %}
+<div class="card shadow-sm fade-in">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Interactive Session Simulation</h1>
+      <a
+        class="btn btn-outline-secondary"
+        href="{{ url_for('start_session') }}"
+      >
+        <i class="bi bi-arrow-clockwise"></i> Reset Session
+      </a>
+    </div>
+
+    <p class="text-muted mb-4">
+      <strong>Visitor ID:</strong> DUMMY_USER |
+      <strong>Session Length:</strong> {{ session_history|length }} actions
+    </p>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card bg-light mb-4">
+          <div class="card-body">
+            <h5 class="card-title">Current Session History</h5>
+            <div class="session-history">
+              {% if session_history %} {% for action in session_history %}
+              <span class="badge bg-primary me-1 mb-1">{{ action }}</span>
+              {% endfor %} {% else %}
+              <p class="text-muted">
+                No actions yet. Start by clicking on a product below.
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if last_pid %}
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">
+              Live Recommendations for Product {{ last_pid }}
+            </h5>
+            <p class="text-muted">
+              Triggered by: <strong>{{ last_action_type }}</strong> on Product
+              <strong>{{ last_pid }}</strong>
+            </p>
+
+            {% if recommendations %}
+            <div class="table-responsive">{{ prediction_table | safe }}</div>
+            {% else %}
+            <div class="alert alert-warning">
+              No co-occurrence recommendations found for this item.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Available Products</h5>
+            <p class="text-muted small">
+              Click on any product to simulate a user action
+            </p>
+
+            <div class="d-grid gap-2">
+  {% for pid in DEMO_PRODUCTS %}
+    <div class="card card-body p-2 mb-2">
+      <p class="mb-1 fw-bold text-center">PID {{ pid }}</p>
+      <div class="btn-group" role="group">
+        <a 
+          class="btn btn-sm btn-outline-primary" 
+          href="{{ url_for('user_action', pid=pid, action_type='view') }}"
+        >
+          View
+        </a>
+        <a 
+          class="btn btn-sm btn-outline-danger" 
+          href="{{ url_for('user_action', pid=pid, action_type='addtocart') }}"
+        >
+          Add to Cart
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="card-title">Session Info</h6>
+            <ul class="list-unstyled small">
+              <li><strong>Actions:</strong> {{ session_history|length }}</li>
+              <li><strong>Last Product:</strong> {{ last_pid or 'None' }}</li>
+              <li>
+                <strong>Last Action:</strong> {{ last_action_type or 'None' }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="card-title">Quick Actions</h6>
+            <div class="d-grid gap-2">
+              <a
+                class="btn btn-outline-info btn-sm"
+                href="{{ url_for('graph_visualization') }}"
+              >
+                View in Graph
+              </a>
+              <a
+                class="btn btn-outline-secondary btn-sm"
+                href="{{ url_for('patterns') }}"
+              >
+                View Patterns
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  // Auto-refresh recommendations every 30 seconds
+  setInterval(function () {
+    if (window.location.pathname.includes("/session_demo")) {
+      // Reload the page to get fresh recommendations
+      window.location.reload();
+    }
+  }, 30000);
+
+  // Add some interactivity
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add click tracking
+    const productButtons = document.querySelectorAll('a[href*="/action/"]');
+    productButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const pid = this.textContent.match(/\d+/)[0];
+        RecommendationApp.showNotification(
+          `Simulating view of Product ${pid}`,
+          "info"
+        );
+      });
+    });
+  });
+</script>
+{% endblock %}

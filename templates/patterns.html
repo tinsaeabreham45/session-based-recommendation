@@ -1,0 +1,153 @@
+{% extends "base.html" %} {% block title %}Recurring Patterns - Session-Based
+Recommendation System{% endblock %} {% block content %}
+<div class="card shadow-sm fade-in">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Top Recurring 3-Step Patterns</h1>
+      <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <p class="text-muted mb-4">
+      These patterns show the most frequent 3-step sequences in user sessions.
+      Each pattern represents a common user journey through our product catalog.
+    </p>
+
+    {% if patterns %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Pattern (A → B → C)</th>
+            <th>Occurrence Count</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pattern in patterns %}
+          <tr>
+            <td class="text-secondary">{{ loop.index }}</td>
+            <td>
+              <div class="pattern-sequence">
+                <span class="badge bg-primary me-1">{{ pattern[0] }}</span>
+                <i class="bi bi-arrow-right text-muted mx-2"></i>
+                <span class="badge bg-info me-1">{{ pattern[1] }}</span>
+                <i class="bi bi-arrow-right text-muted mx-2"></i>
+                <span class="badge bg-success">{{ pattern[2] }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-warning text-dark fs-6"
+                >{{ pattern[3] }}</span
+              >
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a
+                  class="btn btn-outline-primary"
+                  href="{{ url_for('predict', pid=pattern[0]) }}"
+                  data-bs-toggle="tooltip"
+                  title="Get recommendations for first product"
+                >
+                  A
+                </a>
+                <a
+                  class="btn btn-outline-info"
+                  href="{{ url_for('predict', pid=pattern[1]) }}"
+                  data-bs-toggle="tooltip"
+                  title="Get recommendations for second product"
+                >
+                  B
+                </a>
+                <a
+                  class="btn btn-outline-success"
+                  href="{{ url_for('predict', pid=pattern[2]) }}"
+                  data-bs-toggle="tooltip"
+                  title="Get recommendations for third product"
+                >
+                  C
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h6 class="card-title">Pattern Analysis</h6>
+              <ul class="list-unstyled mb-0">
+                <li><strong>Total Patterns:</strong> {{ patterns|length }}</li>
+                <li>
+                  <strong>Most Frequent:</strong> {{ patterns[0][3] if patterns
+                  else 0 }} occurrences
+                </li>
+                <li><strong>Pattern Type:</strong> 3-step sequential</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h6 class="card-title">Quick Actions</h6>
+              <div class="d-grid gap-2">
+                <a
+                  class="btn btn-outline-primary btn-sm"
+                  href="{{ url_for('graph_visualization') }}"
+                >
+                  View Patterns in Graph
+                </a>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  onclick="copyPatterns()"
+                >
+                  Copy Pattern Data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+      <h4 class="alert-heading">No Patterns Found</h4>
+      <p>
+        No recurring 3-step patterns were found in the current dataset. This
+        could indicate:
+      </p>
+      <ul class="mb-0">
+        <li>Insufficient session data</li>
+        <li>Very diverse user behavior</li>
+        <li>Short session lengths</li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function copyPatterns() {
+      const patterns = {{ patterns | tojson }};
+      if (!patterns || patterns.length === 0) {
+          RecommendationApp.showNotification('No patterns to copy', 'warning');
+          return;
+      }
+
+      let text = `Top Recurring 3-Step Patterns:\n\n`;
+      patterns.forEach((pattern, index) => {
+          text += `${index + 1}. ${pattern[0]} → ${pattern[1]} → ${pattern[2]} (Count: ${pattern[3]})\n`;
+      });
+
+      RecommendationApp.copyToClipboard(text);
+  }
+</script>
+{% endblock %}
