@@ -4,7 +4,8 @@ from .utils import get_neo4j_driver, run_cypher_query
 from .recommender_engine import (
     get_next_item_prediction, 
     find_recurring_patterns, 
-    generate_llm_prompt
+    generate_llm_prompt,
+    find_behavioral_patterns 
 )
 from .llm_service import generate_llm_output
 import pandas as pd
@@ -95,6 +96,16 @@ def patterns():
     except Exception as e:
         return f"Error: {str(e)}", 500
 
+@app.route('/behavior')
+def behavioral_patterns():
+    """Show the top recurring behavioral (action) patterns."""
+    try:
+        driver = get_driver()
+        patterns = find_behavioral_patterns(driver, limit=10) # Get top 10
+        return render_template('behavioral_patterns.html', patterns=patterns)
+    except Exception as e:
+        return f"Error getting behavioral patterns: {str(e)}", 500
+
 @app.route('/graph')
 def graph_visualization():
     """Real-time graph visualization page."""
@@ -163,7 +174,7 @@ def session_demo():
                             <th>Recommended PID</th>
                             <th>Score (Co-occurrence)</th>
                             <th>Avg Time Diff</th>
-                            <th>Reasoning (Bonus)</th>
+                            <th>Reasoning</th>
                         </tr>
                     </thead>
                     <tbody>

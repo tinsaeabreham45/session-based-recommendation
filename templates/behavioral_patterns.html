@@ -1,0 +1,54 @@
+{% extends "base.html" %} 
+{% block title %}Behavioral Patterns{% endblock %} 
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-sm fade-in">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h4 mb-0">Top Recurring 3-Step Behavioral Patterns</h1>
+                <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <p class="text-muted mb-4">
+                These patterns show the most common sequences of user actions (regardless of the product ID).
+            </p>
+
+            {% if patterns %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Action Sequence (A → B → C)</th>
+                            <th>Sessions Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pattern in patterns %}
+                        <tr>
+                            <td class="text-secondary">{{ loop.index }}</td>
+                            <td>
+                                <span class="badge bg-primary me-1">{{ pattern[0] | upper }}</span>
+                                <i class="bi bi-arrow-right text-muted mx-2"></i>
+                                <span class="badge bg-info me-1">{{ pattern[1] | upper }}</span>
+                                <i class="bi bi-arrow-right text-muted mx-2"></i>
+                                <span class="badge bg-success">{{ pattern[2] | upper }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark fs-6">{{ pattern[3] }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">No behavioral patterns found.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
