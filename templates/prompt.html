@@ -67,14 +67,18 @@ Recommendation System{% endblock %} {% block content %}
               Copy Response
             </button>
           </div>
-          <div class="llm-output">
-            <pre
-              class="p-3 bg-white border rounded"
-              style="white-space: pre-wrap; max-height: 500px; overflow-y: auto"
-            >
-{{ output }}</pre
-            >
+          <div
+            id="llm-rendered-output"
+            class="p-3 bg-white border rounded"
+            style="white-space: normal; max-height: 500px; overflow-y: auto"
+          >
+            <!-- The actual markdown will be injected here by JavaScript -->
           </div>
+
+          <!-- Store the raw output in a hidden script tag for JavaScript to read -->
+          <script type="text/template" id="raw-llm-output-text">
+            {{ output }}
+          </script>
         </div>
       </div>
     </div>
@@ -133,6 +137,9 @@ Recommendation System{% endblock %} {% block content %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
+<!-- Include the marked.js library from a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <script>
   function setPrompt(text) {
     document.getElementById("prompt").value = text;
@@ -152,15 +159,53 @@ Recommendation System{% endblock %} {% block content %}
     setPrompt(randomPrompt);
   }
 
+  // Function to perform the Markdown rendering
+  function renderMarkdownOutput() {
+    // Check if the output box exists (meaning a response was received)
+    const rawOutputElement = document.getElementById("raw-llm-output-text");
+    if (!rawOutputElement) return;
+
+    // 1. Get the raw Markdown text
+    const markdownText = rawOutputElement.textContent.trim();
+
+    // 2. Convert the Markdown to HTML
+    const htmlOutput = marked.parse(markdownText);
+
+    // 3. Update the content of the target div
+    const outputDiv = document.getElementById("llm-rendered-output");
+    outputDiv.innerHTML = htmlOutput;
+  }
+
   function copyOutput() {
-    const output = `{{ output | replace('\n', '\\n') | replace('"', '\\"') }}`;
-    RecommendationApp.copyToClipboard(output);
+    const output = document
+      .getElementById("raw-llm-output-text")
+      .textContent.trim();
+    navigator.clipboard
+      .writeText(output)
+      .then(() => {
+        alert("Response copied to clipboard!");
+      })
+      .catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = output;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("Response copied to clipboard!");
+      });
   }
 
   // Form submission with loading state
   document.querySelector("form").addEventListener("submit", function (e) {
     const submitBtn = document.getElementById("submitBtn");
-    RecommendationApp.setLoading(submitBtn, true);
+    const spinner = submitBtn.querySelector(".spinner");
+    spinner.classList.remove("d-none");
+    submitBtn.disabled = true;
   });
+
+  // Call the rendering function after the DOM is loaded
+  document.addEventListener("DOMContentLoaded", renderMarkdownOutput);
 </script>
 {% endblock %}
