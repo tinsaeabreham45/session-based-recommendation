@@ -1,6 +1,6 @@
 # Session-Based Recommendation System
 
-graph-based recommendation system that uses co-occurrence patterns to predict the next item a user might be interested in. The system achieves an MRR (Mean Reciprocal Rank) of **0.2503** on the test dataset.
+A graph-based recommendation system that uses co-occurrence patterns to predict the next item a user might be interested in. The system achieves an MRR (Mean Reciprocal Rank) of **0.2503** on the test dataset.
 
 ## Structure
 
@@ -33,10 +33,17 @@ session-based-recommendation/
 │   ├── events.csv              # User interaction events
 │   ├── item_properties_part1.csv & part2.csv
 │   └── category_tree.csv       # Product categories
-└── requirements.txt            # Python dependencies
+├── Dockerfile                    # Application container image
+├── docker-compose.yml            # Flask app + Neo4j services
+├── docker-entrypoint.sh          # Container startup (TCP forwarder)
+├── container_entrypoint.py       # Flask/SocketIO launcher
+├── DOCKER.md                     # Docker usage & troubleshooting
+└── requirements.txt              # Python dependencies
 ```
 
-### data link `https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset/data`
+### Dataset
+
+Download the [RetailRocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset/data) and place the CSV files in the `data/` directory.
 
 ### 🖼️ Schema & Session Flow
 
@@ -52,15 +59,47 @@ Below are visual aids stored in the `schema_images/` folder to help understand t
 *Figure 3 — Belonging_to query relationship*
 
 ![Session Flow](schema_images/performed_visualisation.png)
-*Figure 3 — performed  query relationship*
+*Figure 4 — performed query relationship*
 
-## Quick Start
+## Docker Quick Start (Recommended)
+
+The fastest way to run the full stack is with Docker Compose. It starts the Flask application and Neo4j together, with the required ports, credentials, and networking already configured.
+
+**Prerequisites:** Docker with Docker Compose v2.
+
+```bash
+docker compose up --build -d
+```
+
+| Service | URL |
+|---|---|
+| Web application | http://localhost:5000 |
+| Neo4j Browser | http://localhost:7474 |
+
+Neo4j credentials: `neo4j` / `12345678`.
+
+To enable the LLM explanation pages, set `GEMINI_API_KEY` in `.env` (or export it before starting Compose). The core recommendation pages work without it.
+
+The first build may take a few minutes. The dataset is not included in the image; place the RetailRocket CSV files in `data/` before loading them into Neo4j. Neo4j data is stored in the `neo4j_data` Docker volume, so it persists across restarts.
+
+To stop the stack:
+
+```bash
+docker compose down       # stop containers, keep Neo4j data
+docker compose down -v    # stop containers and delete Neo4j data
+```
+
+For logs, memory tuning, and troubleshooting, see [DOCKER.md](DOCKER.md).
+
+## Manual Setup
+
+> Docker Compose is the recommended way to run this project. Use the manual steps below only if you already have a local Neo4j instance and Python environment.
 
 ### Prerequisites
 
 1. **Neo4j Database** - Version 5+ with proper memory configuration
 2. **Python Dependencies** - Install from `requirements.txt`
-3. **Data Files** - Ensure all CSV files are in the above link directory
+3. **Data Files** - Ensure all CSV files are in the `data/` directory
 
 ### Installation
 
@@ -87,7 +126,7 @@ python setup_system.py
 
 #### Flask Demo Application
 ```bash
-python src/app.py
+python container_entrypoint.py
 ```
 Then visit `http://localhost:5000` in your browser.
 
