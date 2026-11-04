@@ -1,0 +1,55 @@
+name: session-based-recommendation
+
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: sbr-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474" # Neo4j Browser
+      - "7687:7687" # Bolt
+    environment:
+      # Must match the credentials hardcoded in src/app.py.
+      NEO4J_AUTH: neo4j/12345678
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 512m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -u neo4j -p '12345678' 'RETURN 1' || exit 1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sbr-app
+    restart: unless-stopped
+    init: true
+    ports:
+      - "5000:5000"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
+    volumes:
+      - ./data:/app/data:ro
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
