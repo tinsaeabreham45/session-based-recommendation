@@ -1,2 +1,5 @@
 .venv/
 data
+.env
+.env.*
+!.env.example
